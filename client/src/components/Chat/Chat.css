@@ -160,3 +160,8 @@
     padding: 9px 14px;
   }
 }
+
+.game-chat-wrap {
+  height: 200px;
+  max-height: 100%;
+}
