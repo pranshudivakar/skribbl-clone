@@ -16,8 +16,12 @@ export const SocketProvider = ({ children }) => {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    // ✅ Force localhost:5000
-    const serverUrl = "http://localhost:5000";
+    // ✅ FIX: Hardcoded localhost hata diya. Ab Vite environment variable se
+    // server URL aata hai. Local dev mein .env file se localhost milega,
+    // production (Vercel) mein .env.production ya Vercel dashboard se
+    // Render ka live URL milega.
+    const serverUrl =
+      import.meta.env.VITE_SERVER_URL || "http://localhost:5000";
 
     console.log("🔌 Connecting to server:", serverUrl);
 
