@@ -38,10 +38,12 @@ app.get("/api/room/:roomId", (req, res) => {
   res.json({ message: "Use WebSocket for room info" });
 });
 
-// Serve static files in production
+// ✅ Serve static files in production - RENDER FIX
 if (process.env.NODE_ENV === "production") {
-  const clientPath = path.join(__dirname, "../../client/dist");
+  // ✅ Render ke liye correct path
+  const clientPath = path.join(process.cwd(), "client/dist");
   console.log(`📦 Serving static files from: ${clientPath}`);
+
   app.use(express.static(clientPath));
   app.get("*", (req, res) => {
     if (req.path.startsWith("/api")) {
