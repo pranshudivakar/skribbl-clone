@@ -27,6 +27,7 @@ export default function Game() {
   console.log("🔍 isRoundActive:", state.gameState.isRoundActive);
   console.log("🔍 showWordSelection:", showWordSelection);
   console.log("🔍 pendingWordOptions:", state.pendingWordOptions);
+  console.log("⏱️ Timer timeLeft:", state.gameState.timeLeft);
 
   useEffect(() => {
     if (state.pendingWordOptions) {
@@ -38,8 +39,7 @@ export default function Game() {
       setShowWordSelection(true);
       dispatch({ type: "CLEAR_PENDING_WORD_OPTIONS" });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // ✅ Sirf mount par chalna chahiye, ek baar
+  }, []);
 
   // ✅ MONITOR: isDrawer changes
   useEffect(() => {
@@ -126,6 +126,7 @@ export default function Game() {
         payload: {
           word,
           isRoundActive: true,
+          isDrawer: isDrawer, // ✅ IMPORTANT
         },
       });
 
@@ -133,6 +134,9 @@ export default function Game() {
         type: "SET_DRAWER_STATUS",
         payload: isDrawer,
       });
+
+      // ✅ Request game state to ensure timer is running
+      socket.emit("get_game_state");
     });
 
     socket.on("new_round", ({ round, drawer, wordOptions: options }) => {
@@ -162,6 +166,15 @@ export default function Game() {
             timestamp: Date.now(),
           },
         ]);
+
+        // ✅ Update player score
+        dispatch({
+          type: "UPDATE_PLAYER_SCORE",
+          payload: {
+            playerId: playerId,
+            score: points,
+          },
+        });
       }
     });
 
@@ -184,7 +197,9 @@ export default function Game() {
       setLeaderboard(board);
     });
 
+    // ✅ TIMER UPDATE EVENT - Pehle se hai, but ensure karo
     socket.on("timer_update", ({ timeLeft }) => {
+      console.log("⏱️ Timer update received on Game page:", timeLeft);
       dispatch({
         type: "UPDATE_GAME_STATE",
         payload: { timeLeft },
@@ -192,6 +207,7 @@ export default function Game() {
     });
 
     socket.on("hint_update", ({ hint }) => {
+      console.log("💡 Hint update received:", hint);
       dispatch({
         type: "UPDATE_GAME_STATE",
         payload: { hint },
@@ -225,6 +241,16 @@ export default function Game() {
       socket.emit("get_game_state");
     }
   }, [socket, state.gameState.isGameActive, state.players.length]);
+
+  // ✅ Auto-request timer state every 5 seconds (fallback)
+  useEffect(() => {
+    if (socket && state.gameState.isRoundActive) {
+      const interval = setInterval(() => {
+        socket.emit("get_game_state");
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [socket, state.gameState.isRoundActive]);
 
   const handleWordSelect = (word) => {
     console.log("📤 Word selected:", word);
@@ -303,7 +329,7 @@ export default function Game() {
                 </span>
               </div>
               <div className="game-info-right">
-                <Timer timeLeft={state.gameState.timeLeft} />
+                <Timer timeLeft={state.gameState.timeLeft || 80} />
                 <WordDisplay
                   word={state.gameState.word}
                   isDrawer={state.isDrawer}
