@@ -1,0 +1,304 @@
+/* ====== Layout ====== */
+
+.home-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: linear-gradient(135deg, #4c1d95 0%, #312e81 60%, #1e1b4b 100%);
+  background-size: 200% 200%;
+  animation: gradientShift 12s ease infinite;
+  font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.home-card {
+  background: rgba(31, 31, 46, 0.85);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  padding: 32px;
+  max-width: 420px;
+  width: 100%;
+  animation: cardEnter 0.4s ease-out;
+}
+
+@keyframes cardEnter {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ====== Title ====== */
+
+.home-title {
+  font-size: 2.25rem;
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: 28px;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+  text-shadow: 0 2px 12px rgba(168, 85, 247, 0.5);
+}
+
+/* ====== Form ====== */
+
+.home-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.home-label {
+  color: #d1d5db;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.home-input {
+  width: 100%;
+  padding: 10px 16px;
+  background: #2d2d3d;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  font-size: 1rem;
+  outline: none;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.home-input::placeholder {
+  color: #8b8b9a;
+}
+
+.home-input:focus {
+  border-color: #a855f7;
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.35);
+}
+
+/* ====== Buttons ====== */
+
+.home-btn-create {
+  width: 100%;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #9333ea, #7e22ce);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 1rem;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(147, 51, 234, 0.4);
+  transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.home-btn-create:hover:not(:disabled) {
+  background: linear-gradient(135deg, #a855f7, #9333ea);
+  box-shadow: 0 6px 18px rgba(147, 51, 234, 0.55);
+}
+
+.home-btn-create:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.home-btn-create:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.home-btn-join {
+  padding: 10px 22px;
+  background: #4b5563;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.15s ease;
+  white-space: nowrap;
+}
+
+.home-btn-join:hover {
+  background: #5b6472;
+}
+
+.home-btn-join:active {
+  transform: scale(0.96);
+}
+
+/* ====== Divider ====== */
+
+.home-divider {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 2px 0;
+}
+
+.home-divider::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.home-divider span {
+  position: relative;
+  padding: 0 10px;
+  background: rgba(31, 31, 46, 0.85);
+  color: #9ca3af;
+  font-size: 0.85rem;
+  z-index: 1;
+}
+
+/* ====== Room Code Join Group ====== */
+
+.home-room-input-group {
+  display: flex;
+  gap: 8px;
+}
+
+.home-room-input-group .home-input {
+  flex: 1;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-weight: 600;
+}
+
+/* ====== Settings Panel ====== */
+
+.home-settings {
+  margin-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 12px;
+}
+
+.home-settings-summary {
+  cursor: pointer;
+  color: #9ca3af;
+  font-weight: 500;
+  list-style: none;
+  transition: color 0.2s ease;
+}
+
+.home-settings-summary::-webkit-details-marker {
+  display: none;
+}
+
+.home-settings-summary:hover {
+  color: #ffffff;
+}
+
+.home-settings-content {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-size: 0.9rem;
+  animation: fadeIn 0.25s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.home-setting-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.home-setting-item label {
+  color: #d1d5db;
+}
+
+.home-setting-value {
+  color: #c084fc;
+  font-weight: 700;
+}
+
+/* Custom range slider */
+.home-setting-item input[type="range"] {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: #3f3f52;
+  appearance: none;
+  -webkit-appearance: none;
+  outline: none;
+  cursor: pointer;
+}
+
+.home-setting-item input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #a855f7;
+  box-shadow: 0 2px 6px rgba(168, 85, 247, 0.6);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.home-setting-item input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+.home-setting-item input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: #a855f7;
+  box-shadow: 0 2px 6px rgba(168, 85, 247, 0.6);
+  cursor: pointer;
+}
+
+/* Checkbox */
+.home-checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.home-checkbox-group input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #a855f7;
+  cursor: pointer;
+}
+
+.home-checkbox-group label {
+  color: #d1d5db;
+  cursor: pointer;
+}
+
+/* ====== Responsive ====== */
+
+@media (max-width: 420px) {
+  .home-card {
+    padding: 24px 20px;
+  }
+
+  .home-title {
+    font-size: 1.85rem;
+  }
+}

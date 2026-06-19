@@ -1,0 +1,265 @@
+
+/* ====== Canvas Container ====== */
+
+.canvas-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.canvas-container canvas {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+  background: #ffffff;
+  touch-action: none;
+}
+
+/* ====== Toolbar ====== */
+
+.canvas-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #1f1f2e;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-wrap: wrap;
+  z-index: 5;
+}
+
+.canvas-tool-divider {
+  width: 1px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.15);
+  flex-shrink: 0;
+}
+
+/* ====== Color Palette ====== */
+
+.canvas-colors {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.canvas-color-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  flex-shrink: 0;
+}
+
+.canvas-color-btn:hover {
+  transform: scale(1.15);
+}
+
+.canvas-color-btn.active {
+  border-color: #ffffff;
+  box-shadow: 0 0 0 2px #a855f7;
+  transform: scale(1.15);
+}
+
+/* ====== Brush Size ====== */
+
+.canvas-brush-size {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 120px;
+}
+
+.canvas-brush-size input[type="range"] {
+  width: 90px;
+  height: 5px;
+  border-radius: 999px;
+  background: #3f3f52;
+  appearance: none;
+  -webkit-appearance: none;
+  outline: none;
+  cursor: pointer;
+}
+
+.canvas-brush-size input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #a855f7;
+  box-shadow: 0 2px 6px rgba(168, 85, 247, 0.6);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.canvas-brush-size input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+.canvas-brush-size input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: none;
+  border-radius: 50%;
+  background: #a855f7;
+  cursor: pointer;
+}
+
+.size-label {
+  color: #e5e7eb;
+  font-size: 0.85rem;
+  font-weight: 600;
+  min-width: 18px;
+  text-align: center;
+}
+
+/* ====== Action Buttons ====== */
+
+.canvas-action-btn {
+  padding: 6px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: #ffffff;
+  transition: background-color 0.2s ease, transform 0.15s ease;
+  flex-shrink: 0;
+}
+
+.canvas-action-btn:active {
+  transform: scale(0.95);
+}
+
+.canvas-action-btn.clear {
+  background: #dc2626;
+}
+
+.canvas-action-btn.clear:hover {
+  background: #ef4444;
+}
+
+.canvas-action-btn.undo {
+  background: #4b5563;
+}
+
+.canvas-action-btn.undo:hover {
+  background: #5b6472;
+}
+
+/* ====== Overlay Messages ====== */
+
+.canvas-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 15, 25, 0.55);
+  backdrop-filter: blur(3px);
+  z-index: 10;
+  animation: overlayFadeIn 0.25s ease;
+}
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.canvas-overlay .message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: #ffffff;
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-align: center;
+  background: rgba(31, 31, 46, 0.9);
+  padding: 24px 32px;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.canvas-overlay .icon {
+  font-size: 2.5rem;
+  animation: pulseIcon 1.6s ease-in-out infinite;
+}
+
+@keyframes pulseIcon {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+
+/* ====== Drawer Badge ====== */
+
+.canvas-drawer-badge {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(31, 31, 46, 0.9);
+  color: #ffffff;
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 8;
+  animation: badgeSlideUp 0.3s ease;
+}
+
+@keyframes badgeSlideUp {
+  from { opacity: 0; transform: translate(-50%, 10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* ====== Responsive ====== */
+
+@media (max-width: 640px) {
+  .canvas-tools {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .canvas-color-btn {
+    width: 20px;
+    height: 20px;
+  }
+
+  .canvas-brush-size {
+    min-width: 90px;
+  }
+
+  .canvas-brush-size input[type="range"] {
+    width: 60px;
+  }
+
+  .canvas-action-btn {
+    padding: 6px 10px;
+    font-size: 0.78rem;
+  }
+
+  .canvas-overlay .message {
+    font-size: 0.95rem;
+    padding: 18px 22px;
+  }
+
+  .canvas-overlay .icon {
+    font-size: 2rem;
+  }
+}

@@ -1,0 +1,115 @@
+/* ====== Timer Widget ====== */
+
+.timer-widget {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.timer-display-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.timer-icon {
+  color: #9ca3af;
+  font-size: 1.1rem;
+}
+
+/* ====== Time Text ====== */
+
+.timer-text {
+  font-family: "Consolas", "Courier New", monospace;
+  font-size: 1.5rem;
+  font-weight: 800;
+  transition: color 0.3s ease;
+}
+
+.timer-low {
+  color: #4ade80;
+}
+
+.timer-medium {
+  color: #facc15;
+}
+
+.timer-high {
+  color: #fb923c;
+}
+
+.timer-critical {
+  color: #ef4444;
+}
+
+.timer-pulsing {
+  animation: timerTextPulse 0.8s ease-in-out infinite;
+}
+
+@keyframes timerTextPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+/* ====== Progress Bar ====== */
+
+.timer-progress-track {
+  width: 96px;
+  height: 6px;
+  background: #2d2d3d;
+  border-radius: 999px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.timer-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 1s linear, background-color 0.3s ease;
+}
+
+.timer-progress-low {
+  background: #4ade80;
+}
+
+.timer-progress-medium {
+  background: #facc15;
+}
+
+.timer-progress-high {
+  background: #fb923c;
+}
+
+.timer-progress-critical {
+  background: #ef4444;
+}
+
+/* ====== Status Text ====== */
+
+.timer-status {
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.timer-status-hurry {
+  color: #f87171;
+  animation: timerTextPulse 0.8s ease-in-out infinite;
+}
+
+.timer-status-up {
+  color: #ef4444;
+  font-weight: 700;
+}
+
+/* ====== Responsive ====== */
+
+@media (max-width: 480px) {
+  .timer-progress-track {
+    width: 64px;
+  }
+
+  .timer-text {
+    font-size: 1.25rem;
+  }
+}
