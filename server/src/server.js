@@ -18,15 +18,34 @@ connectDB();
 
 const app = express();
 const httpServer = createServer(app);
+
+// ✅ CORS for Socket.IO
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: [
+      "https://skribbl-clone-vercel.vercel.app",
+      "https://skribbl-clone-vercel-git-main-pranshudivakars-projects.vercel.app",
+      "http://localhost:5173",
+      process.env.CLIENT_URL,
+    ].filter(Boolean),
     methods: ["GET", "POST"],
     credentials: true,
   },
 });
 
-app.use(cors());
+// ✅ CORS for Express
+app.use(
+  cors({
+    origin: [
+      "https://skribbl-clone-vercel.vercel.app",
+      "https://skribbl-clone-vercel-git-main-pranshudivakars-projects.vercel.app",
+      "http://localhost:5173",
+      process.env.CLIENT_URL,
+    ].filter(Boolean),
+    credentials: true,
+  }),
+);
+
 app.use(express.json());
 
 // Health check endpoint
@@ -40,7 +59,6 @@ app.get("/api/room/:roomId", (req, res) => {
 
 // ✅ Serve static files in production - RENDER FIX
 if (process.env.NODE_ENV === "production") {
-  // ✅ Render ke liye correct path
   const clientPath = path.join(process.cwd(), "client/dist");
   console.log(`📦 Serving static files from: ${clientPath}`);
 
