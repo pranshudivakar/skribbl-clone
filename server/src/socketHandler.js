@@ -5,6 +5,69 @@ const rooms = new Map();
 const playerSockets = new Map();
 const messageHandler = new MessageHandler();
 
+// ✅ TIMER FUNCTION
+function startTimer(io, room) {
+  if (room.game.timer) {
+    clearInterval(room.game.timer);
+  }
+
+  room.game.timer = setInterval(() => {
+    room.game.timeLeft--;
+
+    // ✅ Send timer update to everyone
+    io.to(room.id).emit("timer_update", {
+      timeLeft: room.game.timeLeft,
+    });
+
+    // ✅ Show hints at intervals
+    if (room.game.timeLeft % 15 === 0 && room.game.timeLeft > 0) {
+      const hint = room.game.getHint();
+      if (hint) {
+        io.to(room.id).emit("hint_update", { hint });
+      }
+    }
+
+    // ✅ Time's up
+    if (room.game.timeLeft <= 0) {
+      clearInterval(room.game.timer);
+      room.game.timer = null;
+
+      // ✅ End round
+      const roundResult = room.game.endRound();
+      io.to(room.id).emit("round_end", roundResult);
+
+      if (room.game.isGameOver()) {
+        const leaderboard = room.game.getPlayersByScore();
+        const winner = leaderboard[0];
+        io.to(room.id).emit("game_over", {
+          winner: winner.toJSON(),
+          leaderboard: leaderboard.map((p) => p.toJSON()),
+          roundHistory: room.game.roundHistory,
+        });
+        room.status = "finished";
+      } else {
+        // ✅ Start next round after delay
+        setTimeout(() => {
+          const gameStartData = room.game.startNewRound();
+          io.to(room.id).emit("new_round", {
+            round: gameStartData.round,
+            drawer: gameStartData.drawer,
+            wordOptions: gameStartData.wordOptions,
+          });
+
+          const drawer = room.game.currentDrawer;
+          io.to(drawer.socketId).emit("word_selection", {
+            words: gameStartData.wordOptions,
+            drawTime: room.settings.drawTime,
+          });
+
+          startTimer(io, room);
+        }, 3000);
+      }
+    }
+  }, 1000);
+}
+
 export function setupSocketHandlers(io) {
   io.on("connection", (socket) => {
     console.log(`Player connected: ${socket.id}`);
@@ -141,8 +204,7 @@ export function setupSocketHandlers(io) {
     });
 
     // =============================================
-    // ✅ START GAME (FIXED: ab MessageHandler.handleStartGame() use karta hai,
-    // jo word_selection SIRF drawer ke socket ko bhejta hai, poore room ko nahi)
+    // ✅ START GAME - WITH TIMER
     // =============================================
     socket.on("start_game", () => {
       console.log("🚀 start_game event received!");
@@ -162,21 +224,41 @@ export function setupSocketHandlers(io) {
         return;
       }
 
-      // ✅ FIX: MessageHandler.handleStartGame() ko call karo, ismein
-      // already host-check, ready-check, aur sahi broadcastGameStarted() hai
-      const result = messageHandler.handleStartGame(socket, room);
+      if (room.hostId !== socket.id) {
+        console.log("❌ Only host can start");
+        socket.emit("error", { message: "Only host can start" });
+        return;
+      }
 
-      if (result.success) {
-        console.log("✅ Game started via MessageHandler");
+      try {
+        const gameStartData = room.startGame();
+        console.log("✅ Game started:", gameStartData);
+        console.log("📥 Word options:", gameStartData.wordOptions);
         console.log("📥 Drawer:", room.game.currentDrawer?.name);
         console.log("📥 Drawer socketId:", room.game.currentDrawer?.socketId);
-      } else {
-        console.log("❌ Start game failed:", result.error);
+
+        // ✅ Broadcast game_started
+        io.to(room.id).emit("game_started", {
+          roomInfo: room.getRoomInfo(),
+          gameState: room.game.getGameState(),
+        });
+
+        // ✅ Send word selection
+        io.to(room.id).emit("word_selection", {
+          words: gameStartData.wordOptions,
+          drawTime: room.settings.drawTime,
+        });
+
+        // ✅ START TIMER
+        startTimer(io, room);
+      } catch (error) {
+        console.error("❌ Start game error:", error);
+        socket.emit("error", { message: error.message });
       }
     });
 
     // =============================================
-    // ✅ CHOOSE WORD (FIXED: ab MessageHandler.handleChooseWord() use karta hai)
+    // ✅ CHOOSE WORD
     // =============================================
     socket.on("choose_word", ({ word }) => {
       console.log("📥 choose_word received:", word);
@@ -193,12 +275,10 @@ export function setupSocketHandlers(io) {
         return;
       }
 
-      // ✅ FIX: Duplicate logic hata ke MessageHandler ka method use kiya
       const result = messageHandler.handleChooseWord(socket, room, { word });
 
       if (result.success) {
         console.log("✅ Word chosen via MessageHandler:", result.word);
-        // ✅ Updated game state bhi bhej do
         io.to(room.id).emit("game_state", room.game.getGameState());
       } else {
         console.log("❌ Choose word failed:", result.error);
