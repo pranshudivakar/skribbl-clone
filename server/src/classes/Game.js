@@ -12,7 +12,7 @@ export class Game {
       wordCount: settings.wordCount || 3,
       hints: settings.hints || 3,
       wordMode: settings.wordMode || "normal",
-      language: settings.language || "en", // ✅ FIX: language settings se store kiya
+      language: settings.language || "en",
     };
 
     this.players = [];
@@ -141,7 +141,6 @@ export class Game {
     };
   }
 
-  // ✅ FIX: selectWords ab language settings ke hisaab se words pick karta hai
   selectWords() {
     const words = getRandomWords(
       this.settings.wordCount,
@@ -254,6 +253,7 @@ export class Game {
     return hint;
   }
 
+  // ✅ FIXED: endRound with timeLeft reset
   endRound() {
     console.log("📥 Ending round...");
     this.isRoundActive = false;
@@ -261,6 +261,9 @@ export class Game {
       clearInterval(this.timer);
       this.timer = null;
     }
+
+    // ✅ Reset timeLeft for next round
+    this.timeLeft = this.settings.drawTime;
 
     const roundResult = {
       word: this.chosenWord,
