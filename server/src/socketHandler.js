@@ -5,14 +5,23 @@ const rooms = new Map();
 const playerSockets = new Map();
 const messageHandler = new MessageHandler();
 
-// ✅ TIMER FUNCTION
+// ✅ TIMER FUNCTION - WITH ROUND RESET
 function startTimer(io, room) {
+  console.log(`⏱️ STARTING TIMER - ROUND: ${room.game.currentRound}`);
+
   if (room.game.timer) {
     clearInterval(room.game.timer);
+    room.game.timer = null;
   }
+
+  // ✅ Reset timeLeft for new round
+  room.game.timeLeft = room.settings.drawTime;
 
   room.game.timer = setInterval(() => {
     room.game.timeLeft--;
+    console.log(
+      `⏱️ Timer - Round ${room.game.currentRound}: ${room.game.timeLeft}s`,
+    );
 
     // ✅ Send timer update to everyone
     io.to(room.id).emit("timer_update", {
@@ -31,41 +40,49 @@ function startTimer(io, room) {
     if (room.game.timeLeft <= 0) {
       clearInterval(room.game.timer);
       room.game.timer = null;
-
-      // ✅ End round
-      const roundResult = room.game.endRound();
-      io.to(room.id).emit("round_end", roundResult);
-
-      if (room.game.isGameOver()) {
-        const leaderboard = room.game.getPlayersByScore();
-        const winner = leaderboard[0];
-        io.to(room.id).emit("game_over", {
-          winner: winner.toJSON(),
-          leaderboard: leaderboard.map((p) => p.toJSON()),
-          roundHistory: room.game.roundHistory,
-        });
-        room.status = "finished";
-      } else {
-        // ✅ Start next round after delay
-        setTimeout(() => {
-          const gameStartData = room.game.startNewRound();
-          io.to(room.id).emit("new_round", {
-            round: gameStartData.round,
-            drawer: gameStartData.drawer,
-            wordOptions: gameStartData.wordOptions,
-          });
-
-          const drawer = room.game.currentDrawer;
-          io.to(drawer.socketId).emit("word_selection", {
-            words: gameStartData.wordOptions,
-            drawTime: room.settings.drawTime,
-          });
-
-          startTimer(io, room);
-        }, 3000);
-      }
+      endRound(io, room);
     }
   }, 1000);
+}
+
+// ✅ END ROUND FUNCTION
+function endRound(io, room) {
+  console.log(`📥 Round ${room.game.currentRound} ended`);
+
+  const roundResult = room.game.endRound();
+  io.to(room.id).emit("round_end", roundResult);
+
+  if (room.game.isGameOver()) {
+    const leaderboard = room.game.getPlayersByScore();
+    const winner = leaderboard[0];
+    io.to(room.id).emit("game_over", {
+      winner: winner.toJSON(),
+      leaderboard: leaderboard.map((p) => p.toJSON()),
+      roundHistory: room.game.roundHistory,
+    });
+    room.status = "finished";
+  } else {
+    // ✅ START NEXT ROUND AFTER DELAY
+    setTimeout(() => {
+      const gameStartData = room.game.startNewRound();
+      console.log(`📥 New round ${room.game.currentRound} started`);
+
+      io.to(room.id).emit("new_round", {
+        round: gameStartData.round,
+        drawer: gameStartData.drawer,
+        wordOptions: gameStartData.wordOptions,
+      });
+
+      const drawer = room.game.currentDrawer;
+      io.to(drawer.socketId).emit("word_selection", {
+        words: gameStartData.wordOptions,
+        drawTime: room.settings.drawTime,
+      });
+
+      // ✅ RESTART TIMER FOR NEW ROUND
+      startTimer(io, room);
+    }, 3000);
+  }
 }
 
 export function setupSocketHandlers(io) {
@@ -237,19 +254,16 @@ export function setupSocketHandlers(io) {
         console.log("📥 Drawer:", room.game.currentDrawer?.name);
         console.log("📥 Drawer socketId:", room.game.currentDrawer?.socketId);
 
-        // ✅ Broadcast game_started
         io.to(room.id).emit("game_started", {
           roomInfo: room.getRoomInfo(),
           gameState: room.game.getGameState(),
         });
 
-        // ✅ Send word selection
         io.to(room.id).emit("word_selection", {
           words: gameStartData.wordOptions,
           drawTime: room.settings.drawTime,
         });
 
-        // ✅ START TIMER
         startTimer(io, room);
       } catch (error) {
         console.error("❌ Start game error:", error);
