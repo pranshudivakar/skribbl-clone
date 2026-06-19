@@ -13,7 +13,7 @@ const initialState = {
     totalRounds: 0,
     currentDrawer: null,
     word: null,
-    timeLeft: 0,
+    timeLeft: 80, // ✅ DEFAULT 80
     hint: null,
   },
   settings: {
@@ -25,10 +25,7 @@ const initialState = {
   },
   isHost: false,
   isDrawer: false,
-  // ✅ FIX: word_selection event ke race condition se bachne ke liye.
-  // Lobby.jsx navigate karne se pehle yahan word options store kar dega,
-  // taaki Game.jsx mount hone ke baad bhi options miss na hon.
-  pendingWordOptions: null,
+  pendingWordOptions: null, // ✅ Word selection race condition fix
 };
 
 function gameReducer(state, action) {
@@ -51,12 +48,17 @@ function gameReducer(state, action) {
       };
     case "UPDATE_GAME_STATE":
       console.log("📥 REDUCER - Updating game state:", action.payload);
+      // ✅ Agar isDrawer payload mein hai toh state.isDrawer bhi set karo
+      const newGameState = {
+        ...state.gameState,
+        ...action.payload,
+      };
       return {
         ...state,
-        gameState: {
-          ...state.gameState,
-          ...action.payload,
-        },
+        gameState: newGameState,
+        ...(action.payload.isDrawer !== undefined && {
+          isDrawer: action.payload.isDrawer,
+        }),
       };
     case "SET_DRAWER_STATUS":
       console.log(
@@ -83,7 +85,16 @@ function gameReducer(state, action) {
           ...action.payload,
         },
       };
-    // ✅ FIX: pendingWordOptions store karne aur clear karne ke liye actions
+    case "UPDATE_PLAYER_SCORE":
+      console.log("📥 REDUCER - Updating player score:", action.payload);
+      return {
+        ...state,
+        players: state.players.map((p) =>
+          p.id === action.payload.playerId
+            ? { ...p, score: (p.score || 0) + action.payload.score }
+            : p,
+        ),
+      };
     case "SET_PENDING_WORD_OPTIONS":
       console.log("📥 REDUCER - SET_PENDING_WORD_OPTIONS:", action.payload);
       return {
