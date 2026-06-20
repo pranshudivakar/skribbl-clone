@@ -2,6 +2,21 @@
 
 A real-time multiplayer drawing and guessing game built with React, Node.js, Socket.IO, and MongoDB.
 
+Step 1: First Player Creates a Room
+1. Open: https://skribbl-clone-vercel.vercel.app
+2. Enter your name (e.g., "Player1")
+3. Click "Create Room"
+4. You will get a room code (e.g., "ABC123")
+5. COPY the room code
+
+Step 2: Second Player Joins the Room
+text
+1. Open the same link in another browser
+   https://skribbl-clone-vercel.vercel.app
+2. Enter your name (e.g., "Player2")
+3. Paste the room code ("ABC123")
+4. Click "Join"
+
 ## 🚀 Live Demo
 
 - **Frontend (Vercel):** [https://skribbl-clone-vercel.vercel.app](https://skribbl-clone-vercel.vercel.app)
