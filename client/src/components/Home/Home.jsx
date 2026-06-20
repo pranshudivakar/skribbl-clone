@@ -80,6 +80,12 @@ export default function Home() {
     });
   };
 
+  // ✅ Mobile touch support with preventDefault
+  const handleCreateRoomTouch = (e) => {
+    e.preventDefault();
+    handleCreateRoom();
+  };
+
   const handleJoinRoom = () => {
     console.log("🔍 Join room button clicked");
     console.log("🔍 Player name:", playerName);
@@ -127,6 +133,12 @@ export default function Home() {
     });
   };
 
+  // ✅ Mobile touch support with preventDefault
+  const handleJoinRoomTouch = (e) => {
+    e.preventDefault();
+    handleJoinRoom();
+  };
+
   return (
     <div className="home-container">
       <div className="home-card">
@@ -142,11 +154,13 @@ export default function Home() {
               className="home-input"
               placeholder="Enter your name"
               maxLength={20}
+              inputMode="text"
             />
           </div>
 
           <button
             onClick={handleCreateRoom}
+            onTouchStart={handleCreateRoomTouch}
             disabled={isCreating}
             className="home-btn-create"
           >
@@ -165,8 +179,14 @@ export default function Home() {
               className="home-input"
               placeholder="Room Code"
               maxLength={6}
+              inputMode="text"
+              autoCapitalize="characters"
             />
-            <button onClick={handleJoinRoom} className="home-btn-join">
+            <button
+              onClick={handleJoinRoom}
+              onTouchStart={handleJoinRoomTouch}
+              className="home-btn-join"
+            >
               Join
             </button>
           </div>
