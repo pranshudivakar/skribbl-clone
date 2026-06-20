@@ -86,6 +86,14 @@ A real-time multiplayer drawing and guessing game built with React, Node.js, Soc
 
 ---
 
+## 🏆 Bonus Features Implemented
+- ✅ Multi-Language Word Support (English, Hindi, Spanish)
+- ✅ Private Rooms (Invite-only)
+- ✅ Eraser Tool
+- ✅ Mobile Responsive UI
+- ✅ Auto Word Selection Timer (10 seconds)
+
+
 ## 🏗️ Architecture
 
 ### Project Structure

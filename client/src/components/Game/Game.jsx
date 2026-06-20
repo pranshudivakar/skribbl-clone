@@ -1,356 +1,358 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useSocket } from "../../contexts/SocketContext";
-import { useGame } from "../../contexts/GameContext";
-import Canvas from "../Canvas/Canvas";
-import Chat from "../Chat/Chat";
-import Scoreboard from "./Scoreboard";
-import WordDisplay from "./WordDisplay";
-import Timer from "./Timer";
-import WordSelection from "./WordSelection";
-import "./Game.css";
+import { Player } from "./Player.js";
+import { getRandomWords } from "../utils/wordList.js";
 
-export default function Game() {
-  const navigate = useNavigate();
-  const { socket } = useSocket();
-  const { state, dispatch } = useGame();
-  const [guesses, setGuesses] = useState([]);
-  const [gameOver, setGameOver] = useState(false);
-  const [winner, setWinner] = useState(null);
-  const [leaderboard, setLeaderboard] = useState([]);
-  const [showWordSelection, setShowWordSelection] = useState(false);
-  const [wordOptions, setWordOptions] = useState([]);
+export class Game {
+  constructor(settings) {
+    console.log("📥 Creating new Game instance with settings:", settings);
 
-  console.log("🎮 Game component rendered");
-  console.log("🔍 Players:", state.players);
-  console.log("🔍 isDrawer:", state.isDrawer);
-  console.log("🔍 isRoundActive:", state.gameState.isRoundActive);
-  console.log("🔍 showWordSelection:", showWordSelection);
-  console.log("🔍 pendingWordOptions:", state.pendingWordOptions);
-  console.log("⏱️ Timer timeLeft:", state.gameState.timeLeft);
-
-  useEffect(() => {
-    if (state.pendingWordOptions) {
-      console.log(
-        "📥🔥 Found pendingWordOptions in context, showing word selection immediately:",
-        state.pendingWordOptions,
-      );
-      setWordOptions(state.pendingWordOptions.words);
-      setShowWordSelection(true);
-      dispatch({ type: "CLEAR_PENDING_WORD_OPTIONS" });
-    }
-  }, []);
-
-  // ✅ MONITOR: isDrawer changes
-  useEffect(() => {
-    console.log("📥 isDrawer CHANGED to:", state.isDrawer);
-  }, [state.isDrawer]);
-
-  // ✅ FIX 1: Sync players and request game state on mount
-  useEffect(() => {
-    console.log("📥 Game component - Current players:", state.players);
-    console.log("📥 Game component - Current game state:", state.gameState);
-
-    if (state.players.length === 0 && socket) {
-      console.log("📤 Requesting game state from server...");
-      socket.emit("get_game_state");
-    }
-
-    if (state.players && state.players.length > 0) {
-      console.log("✅ Players already in state:", state.players);
-    }
-  }, [state.players, socket]);
-
-  // ✅ FIX 2: Main socket events
-  useEffect(() => {
-    if (!socket) {
-      console.log("⏳ Waiting for socket...");
-      return;
-    }
-
-    console.log("✅ Game useEffect - Socket ready");
-
-    socket.on("game_started", ({ roomInfo, gameState }) => {
-      console.log("🎮 GAME STARTED EVENT RECEIVED!");
-      console.log("📥 Room info:", roomInfo);
-      console.log("📥 Game state:", gameState);
-
-      dispatch({
-        type: "UPDATE_GAME_STATE",
-        payload: {
-          isGameActive: true,
-          ...gameState,
-        },
-      });
-
-      if (roomInfo && roomInfo.players) {
-        console.log("📥 Updating players from roomInfo:", roomInfo.players);
-        dispatch({
-          type: "UPDATE_PLAYERS",
-          payload: roomInfo.players,
-        });
-      }
-    });
-
-    socket.on("game_state", (gameState) => {
-      console.log("📥 Game state received:", gameState);
-      dispatch({
-        type: "UPDATE_GAME_STATE",
-        payload: gameState,
-      });
-    });
-
-    socket.on("word_selection", ({ words, drawTime }) => {
-      console.log("📥🔥 WORD SELECTION RECEIVED:", words);
-      console.log("📥🔥 Draw time:", drawTime);
-      console.log("📥🔥 Current socket ID:", socket.id);
-
-      setWordOptions(words);
-      setShowWordSelection(true);
-    });
-
-    socket.on("word_chosen", ({ word, drawerId }) => {
-      console.log("📥🔥 WORD CHOSEN RECEIVED:");
-      console.log("📥 Word:", word);
-      console.log("📥 Drawer ID:", drawerId);
-      console.log("📥 Current Socket ID:", socket.id);
-      console.log("📥 Am I drawer?", drawerId === socket.id);
-
-      setShowWordSelection(false);
-
-      const isDrawer = drawerId === socket.id;
-      console.log("📥 Setting isDrawer to:", isDrawer);
-
-      dispatch({
-        type: "UPDATE_GAME_STATE",
-        payload: {
-          word,
-          isRoundActive: true,
-          isDrawer: isDrawer,
-        },
-      });
-
-      dispatch({
-        type: "SET_DRAWER_STATUS",
-        payload: isDrawer,
-      });
-
-      socket.emit("get_game_state");
-    });
-
-    socket.on("new_round", ({ round, drawer, wordOptions: options }) => {
-      console.log("📥 New round:", round);
-      setWordOptions(options);
-      setShowWordSelection(true);
-      setGuesses([]);
-      dispatch({
-        type: "UPDATE_GAME_STATE",
-        payload: {
-          currentRound: round,
-          currentDrawer: drawer,
-          isRoundActive: true,
-        },
-      });
-    });
-
-    socket.on("guess_result", ({ correct, playerId, playerName, points }) => {
-      if (correct) {
-        console.log("🎯 Correct guess!", playerName, points);
-        setGuesses((prev) => [
-          ...prev,
-          {
-            playerName,
-            points,
-            isCorrect: true,
-            timestamp: Date.now(),
-          },
-        ]);
-
-        dispatch({
-          type: "UPDATE_PLAYER_SCORE",
-          payload: {
-            playerId: playerId,
-            score: points,
-          },
-        });
-      }
-    });
-
-    socket.on("round_end", ({ word, scores, guessed }) => {
-      console.log("📥 Round ended:", word);
-      setShowWordSelection(false);
-      dispatch({
-        type: "UPDATE_GAME_STATE",
-        payload: {
-          isRoundActive: false,
-          word,
-        },
-      });
-    });
-
-    socket.on("game_over", ({ winner: gameWinner, leaderboard: board }) => {
-      console.log("📥 Game over!");
-      setGameOver(true);
-      setWinner(gameWinner);
-      setLeaderboard(board);
-    });
-
-    socket.on("timer_update", ({ timeLeft }) => {
-      console.log("⏱️ Timer update received on Game page:", timeLeft);
-      dispatch({
-        type: "UPDATE_GAME_STATE",
-        payload: { timeLeft },
-      });
-    });
-
-    socket.on("hint_update", ({ hint }) => {
-      console.log("💡 Hint update received:", hint);
-      dispatch({
-        type: "UPDATE_GAME_STATE",
-        payload: { hint },
-      });
-    });
-
-    socket.on("error", ({ message }) => {
-      console.error("❌ Socket error:", message);
-      alert(message);
-    });
-
-    return () => {
-      console.log("🧹 Game useEffect - Cleanup");
-      socket.off("game_started");
-      socket.off("game_state");
-      socket.off("word_selection");
-      socket.off("word_chosen");
-      socket.off("new_round");
-      socket.off("guess_result");
-      socket.off("round_end");
-      socket.off("game_over");
-      socket.off("timer_update");
-      socket.off("hint_update");
-      socket.off("error");
+    this.settings = {
+      maxPlayers: settings.maxPlayers || 8,
+      rounds: settings.rounds || 3,
+      drawTime: settings.drawTime || 80,
+      wordCount: settings.wordCount || 3,
+      hints: settings.hints || 3,
+      wordMode: settings.wordMode || "normal",
+      language: settings.language || "en",
     };
-  }, [socket, dispatch]);
 
-  useEffect(() => {
-    if (socket && state.gameState.isGameActive && state.players.length === 0) {
-      console.log("📤 Auto-requesting game state (players missing)...");
-      socket.emit("get_game_state");
-    }
-  }, [socket, state.gameState.isGameActive, state.players.length]);
+    this.players = [];
+    this.roomId = null;
+    this.currentRound = 0;
+    this.currentDrawer = null;
+    this.currentWord = null;
+    this.wordOptions = [];
+    this.chosenWord = null;
+    this.guessedPlayers = new Set();
+    this.isGameActive = false;
+    this.isRoundActive = false;
+    this.timer = null;
+    this.timeLeft = this.settings.drawTime;
+    this.hintsRevealed = 0;
+    this.hintTimers = [];
+    this.roundHistory = [];
+    this.drawHistory = [];
 
-  useEffect(() => {
-    if (socket && state.gameState.isRoundActive) {
-      const interval = setInterval(() => {
-        socket.emit("get_game_state");
-      }, 5000);
-      return () => clearInterval(interval);
-    }
-  }, [socket, state.gameState.isRoundActive]);
-
-  const handleWordSelect = (word) => {
-    console.log("📤 Word selected:", word);
-    socket.emit("choose_word", { word });
-    setShowWordSelection(false);
-  };
-
-  if (gameOver) {
-    return (
-      <div className="game-over-page">
-        <div className="game-over-card">
-          <h1 className="game-over-title">🎮 Game Over!</h1>
-          <div className="game-over-winner">
-            <div className="winner-label">🏆 Winner</div>
-            <div className="winner-name">{winner?.name}</div>
-            <div className="winner-score">Score: {winner?.score}</div>
-          </div>
-          <div className="game-over-leaderboard">
-            <h2 className="leaderboard-title">📊 Leaderboard</h2>
-            <div className="leaderboard-list">
-              {leaderboard.map((player, index) => (
-                <div key={player.id} className="leaderboard-row">
-                  <span className="leaderboard-player">
-                    <span className="leaderboard-rank">#{index + 1}</span>
-                    {player.name}
-                    {player.id === state.player?.id && (
-                      <span className="leaderboard-you">(You)</span>
-                    )}
-                  </span>
-                  <span className="leaderboard-score">{player.score} pts</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <button onClick={() => navigate("/")} className="play-again-btn">
-            🔄 Play Again
-          </button>
-        </div>
-      </div>
-    );
+    console.log("✅ Game instance created");
   }
 
-  if (showWordSelection) {
-    return (
-      <WordSelection
-        words={wordOptions}
-        onSelect={handleWordSelect}
-        timeLimit={10}
-      />
+  addPlayer(id, name, socketId) {
+    console.log("    📥 Game.addPlayer called");
+    console.log("    📥 ID:", id);
+    console.log("    📥 Name:", name);
+    console.log("    📥 SocketId:", socketId);
+    console.log("    📥 Current players:", this.players.length);
+    console.log("    📥 Max players:", this.settings.maxPlayers);
+
+    if (this.players.length >= this.settings.maxPlayers) {
+      console.log("    ❌ Room is full!");
+      throw new Error("Room is full");
+    }
+
+    console.log("    📥 Creating new Player object...");
+    const player = new Player(id, name, socketId);
+    this.players.push(player);
+
+    console.log("    ✅ Player added successfully");
+    console.log("    📥 Player socketId:", player.socketId);
+    console.log("    📥 Total players now:", this.players.length);
+    console.log(
+      "    📥 Players list:",
+      this.players.map((p) => p.name),
     );
+
+    return player;
   }
 
-  return (
-    <div className="game-page">
-      <div className="game-layout">
-        <div className="game-grid">
-          <div className="game-sidebar">
-            <Scoreboard
-              players={state.players}
-              currentDrawer={state.gameState.currentDrawer}
-            />
-          </div>
+  removePlayer(playerId) {
+    console.log("📥 Removing player:", playerId);
+    const index = this.players.findIndex((p) => p.id === playerId);
+    if (index !== -1) {
+      const player = this.players[index];
+      console.log("📥 Found player:", player.name);
 
-          <div className="game-main">
-            <div className="game-info-bar">
-              <div className="game-info-left">
-                <span className="game-round">
-                  Round {state.gameState.currentRound}/{state.settings.rounds}
-                </span>
-                <span className="game-info-divider">|</span>
-                <span className="game-drawer-name">
-                  🎨 {state.gameState.currentDrawer?.name}
-                  {state.isDrawer && (
-                    <span className="game-drawer-you">(You)</span>
-                  )}
-                </span>
-              </div>
-              <div className="game-info-right">
-                <Timer timeLeft={state.gameState.timeLeft || 80} />
-                <WordDisplay
-                  word={state.gameState.word}
-                  isDrawer={state.isDrawer}
-                  hint={state.gameState.hint}
-                />
-              </div>
-            </div>
+      if (this.currentDrawer && this.currentDrawer.id === playerId) {
+        console.log("📥 Current drawer is leaving, ending round...");
+        this.endRound();
+      }
+      this.players.splice(index, 1);
+      console.log("📥 Player removed. Total players:", this.players.length);
+      return player;
+    }
+    console.log("📥 Player not found");
+    return null;
+  }
 
-            <div className="game-canvas-wrap">
-              <Canvas
-                isDrawer={state.isDrawer}
-                isRoundActive={state.gameState.isRoundActive}
-              />
-            </div>
+  getPlayer(playerId) {
+    return this.players.find((p) => p.id === playerId);
+  }
 
-            <div className="game-chat-wrap">
-              <Chat
-                guesses={guesses}
-                isDrawer={state.isDrawer}
-                isRoundActive={state.gameState.isRoundActive}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  getPlayersByScore() {
+    return [...this.players].sort((a, b) => b.score - a.score);
+  }
+
+  startGame() {
+    console.log("📥 Starting game...");
+    console.log(
+      "📥 Players:",
+      this.players.map((p) => p.name),
+    );
+
+    if (this.players.length < 2) {
+      console.log("❌ Need at least 2 players");
+      throw new Error("Need at least 2 players");
+    }
+
+    this.isGameActive = true;
+    this.currentRound = 0;
+    this.players.forEach((p) => p.resetForNewGame());
+    console.log("✅ Game started");
+
+    return this.startNewRound();
+  }
+
+  startNewRound() {
+    console.log("📥 Starting new round...");
+    this.currentRound++;
+    console.log("📥 Round:", this.currentRound);
+
+    this.guessedPlayers = new Set();
+    this.isRoundActive = true;
+    this.timeLeft = this.settings.drawTime;
+    this.hintsRevealed = 0;
+    this.drawHistory = [];
+    this.chosenWord = null;
+
+    const drawerIndex = (this.currentRound - 1) % this.players.length;
+    this.currentDrawer = this.players[drawerIndex];
+    this.currentDrawer.isDrawer = true;
+
+    console.log("📥 Drawer:", this.currentDrawer.name);
+    console.log("📥 Drawer socketId:", this.currentDrawer.socketId);
+
+    this.wordOptions = this.selectWords();
+    this.currentWord = this.wordOptions[0];
+    console.log("📥 Word options:", this.wordOptions);
+
+    return {
+      round: this.currentRound,
+      drawer: this.currentDrawer.toJSON(),
+      wordOptions: this.wordOptions,
+      drawTime: this.settings.drawTime,
+    };
+  }
+
+  selectWords() {
+    const words = getRandomWords(
+      this.settings.wordCount,
+      null,
+      this.settings.language || "en",
+    );
+    console.log(
+      "📥 Selected words from wordList (language:",
+      this.settings.language || "en",
+      "):",
+      words,
+    );
+    return words;
+  }
+
+  chooseWord(word) {
+    console.log("📥 Choosing word:", word);
+    if (!this.wordOptions.includes(word)) {
+      console.log("❌ Invalid word choice:", word);
+      throw new Error("Invalid word choice");
+    }
+    this.chosenWord = word;
+    this.currentWord = word;
+    console.log("✅ Word chosen:", word);
+    return word;
+  }
+
+  handleGuess(playerId, guess) {
+    console.log("📥 Guess from player:", playerId, "Guess:", guess);
+
+    const player = this.getPlayer(playerId);
+    if (!player) {
+      console.log("❌ Player not found");
+      return { correct: false, reason: "Player not found" };
+    }
+
+    if (player.isDrawer) {
+      console.log("❌ Drawer cannot guess");
+      return { correct: false, reason: "Drawer cannot guess" };
+    }
+
+    if (this.guessedPlayers.has(playerId)) {
+      console.log("❌ Already guessed correctly");
+      return { correct: false, reason: "Already guessed correctly" };
+    }
+
+    const normalizedGuess = guess.toLowerCase().trim();
+    const normalizedWord = this.chosenWord.toLowerCase().trim();
+    console.log(
+      "📥 Normalized guess:",
+      normalizedGuess,
+      "Word:",
+      normalizedWord,
+    );
+
+    if (normalizedGuess === normalizedWord) {
+      this.guessedPlayers.add(playerId);
+      const points = this.calculatePoints();
+      player.addPoints(points);
+      console.log("✅ Correct guess! Player:", player.name, "Points:", points);
+
+      return {
+        correct: true,
+        points,
+        playerName: player.name,
+        allGuessed: this.guessedPlayers.size === this.players.length - 1,
+      };
+    }
+
+    console.log("❌ Wrong guess");
+    return { correct: false };
+  }
+
+  calculatePoints() {
+    const basePoints = 100;
+    const timeBonus = Math.floor((this.timeLeft / this.settings.drawTime) * 50);
+    const points = basePoints + timeBonus;
+    console.log(
+      "📥 Calculating points - Base:",
+      basePoints,
+      "Time bonus:",
+      timeBonus,
+      "Total:",
+      points,
+    );
+    return points;
+  }
+
+  // ✅ FIXED: getHint function - sahi se hint generate karega
+  getHint() {
+    console.log(
+      "📥 getHint called - hintsRevealed:",
+      this.hintsRevealed,
+      "total hints:",
+      this.settings.hints,
+    );
+
+    // Agar hints khatam ho gaye ya word nahi hai toh null return karo
+    if (this.hintsRevealed >= this.settings.hints || !this.chosenWord) {
+      console.log("📥 No more hints available");
+      return null;
+    }
+
+    this.hintsRevealed++;
+    const word = this.chosenWord;
+
+    // Kitne letters reveal karne hain calculate karo
+    const revealed = Math.floor(
+      (this.hintsRevealed / this.settings.hints) * word.length,
+    );
+    console.log("📥 Revealed count:", revealed, "out of", word.length);
+
+    let hint = "";
+    for (let i = 0; i < word.length; i++) {
+      if (i < revealed || word[i] === " ") {
+        hint += word[i];
+      } else {
+        hint += "_";
+      }
+    }
+    console.log("📥 Hint revealed:", hint);
+    return hint;
+  }
+
+  endRound() {
+    console.log("📥 Ending round...");
+    this.isRoundActive = false;
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
+
+    this.timeLeft = this.settings.drawTime;
+
+    const roundResult = {
+      word: this.chosenWord,
+      scores: this.players.map((p) => ({
+        id: p.id,
+        name: p.name,
+        score: p.score,
+      })),
+      guessed: Array.from(this.guessedPlayers),
+      nextDrawer: this.getNextDrawer(),
+    };
+
+    if (this.currentDrawer) {
+      this.currentDrawer.isDrawer = false;
+    }
+    this.roundHistory.push(roundResult);
+    console.log("✅ Round ended. Word was:", this.chosenWord);
+
+    return roundResult;
+  }
+
+  getNextDrawer() {
+    const currentIndex = this.players.findIndex(
+      (p) => p.id === this.currentDrawer.id,
+    );
+    const nextIndex = (currentIndex + 1) % this.players.length;
+    console.log(
+      "📥 Next drawer index:",
+      nextIndex,
+      "Player:",
+      this.players[nextIndex].name,
+    );
+    return this.players[nextIndex];
+  }
+
+  isGameOver() {
+    const isOver = this.currentRound >= this.settings.rounds;
+    console.log(
+      "📥 Game over check - Current round:",
+      this.currentRound,
+      "Total rounds:",
+      this.settings.rounds,
+      "Is over:",
+      isOver,
+    );
+    return isOver;
+  }
+
+  getGameState() {
+    const state = {
+      isGameActive: this.isGameActive,
+      isRoundActive: this.isRoundActive,
+      currentRound: this.currentRound,
+      totalRounds: this.settings.rounds,
+      currentDrawer: this.currentDrawer ? this.currentDrawer.toJSON() : null,
+      word: this.getWordDisplay(),
+      timeLeft: this.timeLeft,
+      players: this.players.map((p) => p.toJSON()),
+      hint: this.getHint(),
+      settings: this.settings,
+    };
+    console.log("📥 Game state:", state);
+    return state;
+  }
+
+  getWordDisplay() {
+    if (!this.chosenWord) return null;
+    if (this.settings.wordMode === "hidden") return null;
+    return this.chosenWord;
+  }
+
+  addDrawAction(action) {
+    this.drawHistory.push({
+      ...action,
+      timestamp: Date.now(),
+    });
+  }
+
+  getDrawHistory() {
+    return this.drawHistory;
+  }
 }
