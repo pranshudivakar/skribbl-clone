@@ -168,6 +168,48 @@ export class Game {
     return word;
   }
 
+  // ✅ NAYA: Server-side timer start karta hai. Har second this.timeLeft
+  // decrement hota hai aur onTick callback ko call karta hai (jo
+  // MessageHandler.js se timer_update emit karega). Jab time 0 ho jaye,
+  // onTimeUp callback call hota hai (jo round end karega).
+  startTimer(onTick, onTimeUp) {
+    console.log("⏱️ Starting server-side timer. Duration:", this.timeLeft);
+
+    // ✅ Purana timer agar chal raha ho to pehle clear karo (safety)
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
+
+    this.timer = setInterval(() => {
+      this.timeLeft -= 1;
+      console.log("⏱️ Timer tick. timeLeft:", this.timeLeft);
+
+      if (onTick) {
+        onTick(this.timeLeft);
+      }
+
+      if (this.timeLeft <= 0) {
+        console.log("⏰ Timer reached 0, stopping...");
+        clearInterval(this.timer);
+        this.timer = null;
+        if (onTimeUp) {
+          onTimeUp();
+        }
+      }
+    }, 1000);
+  }
+
+  // ✅ NAYA: Timer ko manually stop karne ke liye (round end hone par,
+  // ya sab players guess kar lein to)
+  stopTimer() {
+    if (this.timer) {
+      console.log("⏹️ Stopping timer manually");
+      clearInterval(this.timer);
+      this.timer = null;
+    }
+  }
+
   handleGuess(playerId, guess) {
     console.log("📥 Guess from player:", playerId, "Guess:", guess);
 
@@ -253,14 +295,14 @@ export class Game {
     return hint;
   }
 
-  // ✅ FIXED: endRound with timeLeft reset
+  // ✅ FIXED: endRound ab timer ko bhi stop karta hai (already tha) aur
+  // timeLeft reset karta hai
   endRound() {
     console.log("📥 Ending round...");
     this.isRoundActive = false;
-    if (this.timer) {
-      clearInterval(this.timer);
-      this.timer = null;
-    }
+
+    // ✅ Timer stop karo
+    this.stopTimer();
 
     // ✅ Reset timeLeft for next round
     this.timeLeft = this.settings.drawTime;
