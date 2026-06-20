@@ -9,11 +9,11 @@ export class Room {
     this.game = new Game(settings);
     this.isPrivate = settings.isPrivate || false;
     this.createdAt = Date.now();
-    this.status = "waiting"; // waiting, playing, finished
+    this.status = "waiting"; 
   }
   
 
-  // ✅ ONLY ONE addPlayer - with console.log
+
   addPlayer(id, name, socketId) {
     console.log("  📥 Room.addPlayer called");
     console.log("  📥 ID:", id, "Name:", name);

@@ -5,7 +5,7 @@ const rooms = new Map();
 const playerSockets = new Map();
 const messageHandler = new MessageHandler();
 
-// ✅ TIMER FUNCTION - WITH ROUND RESET
+
 function startTimer(io, room) {
   console.log(`⏱️ STARTING TIMER - ROUND: ${room.game.currentRound}`);
 
@@ -14,7 +14,7 @@ function startTimer(io, room) {
     room.game.timer = null;
   }
 
-  // ✅ Reset timeLeft for new round
+  
   room.game.timeLeft = room.settings.drawTime;
 
   room.game.timer = setInterval(() => {
@@ -23,12 +23,12 @@ function startTimer(io, room) {
       `⏱️ Timer - Round ${room.game.currentRound}: ${room.game.timeLeft}s`,
     );
 
-    // ✅ Send timer update to everyone
+    
     io.to(room.id).emit("timer_update", {
       timeLeft: room.game.timeLeft,
     });
 
-    // ✅ Show hints at intervals
+    
     if (room.game.timeLeft % 15 === 0 && room.game.timeLeft > 0) {
       const hint = room.game.getHint();
       if (hint) {
@@ -36,7 +36,6 @@ function startTimer(io, room) {
       }
     }
 
-    // ✅ Time's up
     if (room.game.timeLeft <= 0) {
       clearInterval(room.game.timer);
       room.game.timer = null;
@@ -45,7 +44,7 @@ function startTimer(io, room) {
   }, 1000);
 }
 
-// ✅ END ROUND FUNCTION
+
 function endRound(io, room) {
   console.log(`📥 Round ${room.game.currentRound} ended`);
 
@@ -62,7 +61,7 @@ function endRound(io, room) {
     });
     room.status = "finished";
   } else {
-    // ✅ START NEXT ROUND AFTER DELAY
+    
     setTimeout(() => {
       const gameStartData = room.game.startNewRound();
       console.log(`📥 New round ${room.game.currentRound} started`);
@@ -89,9 +88,6 @@ export function setupSocketHandlers(io) {
   io.on("connection", (socket) => {
     console.log(`Player connected: ${socket.id}`);
 
-    // =============================================
-    // ✅ CREATE ROOM
-    // =============================================
     socket.on("create_room", ({ hostName, settings }) => {
       try {
         console.log("========================================");
@@ -146,9 +142,6 @@ export function setupSocketHandlers(io) {
       }
     });
 
-    // =============================================
-    // ✅ JOIN ROOM
-    // =============================================
     socket.on("join_room", ({ roomId, playerName }) => {
       try {
         console.log("📥 JOIN ROOM REQUEST:", roomId, playerName);
@@ -186,9 +179,7 @@ export function setupSocketHandlers(io) {
       }
     });
 
-    // =============================================
-    // ✅ LEAVE ROOM
-    // =============================================
+
     socket.on("leave_room", () => {
       const playerInfo = playerSockets.get(socket.id);
       if (!playerInfo) return;
@@ -199,9 +190,7 @@ export function setupSocketHandlers(io) {
       messageHandler.handleLeaveRoom(socket, room);
     });
 
-    // =============================================
-    // ✅ TOGGLE READY
-    // =============================================
+   
     socket.on("toggle_ready", () => {
       console.log("🔄 toggle_ready from:", socket.id);
 
@@ -220,9 +209,6 @@ export function setupSocketHandlers(io) {
       messageHandler.handleToggleReady(socket, room);
     });
 
-    // =============================================
-    // ✅ START GAME - WITH TIMER
-    // =============================================
     socket.on("start_game", () => {
       console.log("🚀 start_game event received!");
       console.log("📥 Socket ID:", socket.id);
@@ -271,9 +257,7 @@ export function setupSocketHandlers(io) {
       }
     });
 
-    // =============================================
-    // ✅ CHOOSE WORD
-    // =============================================
+    
     socket.on("choose_word", ({ word }) => {
       console.log("📥 choose_word received:", word);
 
@@ -299,9 +283,7 @@ export function setupSocketHandlers(io) {
       }
     });
 
-    // =============================================
-    // ✅ DRAWING EVENTS
-    // =============================================
+    
     socket.on("draw_start", (data) => {
       const playerInfo = playerSockets.get(socket.id);
       if (!playerInfo) return;
@@ -372,9 +354,7 @@ export function setupSocketHandlers(io) {
       messageHandler.handleDrawingMessage(socket, room, "draw_undo", {});
     });
 
-    // =============================================
-    // ✅ GUESSING
-    // =============================================
+   
     socket.on("guess", ({ text }) => {
       const playerInfo = playerSockets.get(socket.id);
       if (!playerInfo) return;
@@ -390,9 +370,6 @@ export function setupSocketHandlers(io) {
       messageHandler.handleGuess(socket, room, { text });
     });
 
-    // =============================================
-    // ✅ CHAT
-    // =============================================
     socket.on("chat_message", ({ text }) => {
       const playerInfo = playerSockets.get(socket.id);
       if (!playerInfo) return;
@@ -408,9 +385,7 @@ export function setupSocketHandlers(io) {
       messageHandler.handleChatMessage(socket, room, { text });
     });
 
-    // =============================================
-    // ✅ GET GAME STATE
-    // =============================================
+  
     socket.on("get_game_state", () => {
       const playerInfo = playerSockets.get(socket.id);
       if (!playerInfo) return;
@@ -421,9 +396,7 @@ export function setupSocketHandlers(io) {
       messageHandler.handleGetGameState(socket, room);
     });
 
-    // =============================================
-    // ✅ DISCONNECT
-    // =============================================
+ 
     socket.on("disconnect", () => {
       console.log(`❌ Player disconnected: ${socket.id}`);
 

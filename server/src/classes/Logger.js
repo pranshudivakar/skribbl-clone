@@ -19,7 +19,7 @@ export class Logger {
       data,
     };
 
-    // Console output with colors
+    
     const colors = {
       INFO: "\x1b[32m", // Green
       WARN: "\x1b[33m", // Yellow
@@ -58,7 +58,7 @@ export class Logger {
     }
   }
 
-  // Specialized logging for game events
+  
   gameEvent(roomId, event, data = null) {
     return this.info(`Game Event: ${event}`, {
       roomId,
@@ -85,7 +85,7 @@ export class Logger {
     });
   }
 
-  // Log errors with stack trace
+
   logError(error, context = null) {
     return this.error(error.message, {
       stack: error.stack,
