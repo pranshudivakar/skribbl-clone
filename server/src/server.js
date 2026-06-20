@@ -57,22 +57,21 @@ app.get("/api/room/:roomId", (req, res) => {
   res.json({ message: "Use WebSocket for room info" });
 });
 
-// ✅ Serve static files in production - RENDER FIX
-if (process.env.NODE_ENV === "production") {
-  const clientPath = path.join(process.cwd(), "client/dist");
-  console.log(`📦 Serving static files from: ${clientPath}`);
-
-  app.use(express.static(clientPath));
-  app.get("*", (req, res) => {
-    if (req.path.startsWith("/api")) {
-      return res.status(404).json({ error: "API endpoint not found" });
-    }
-    if (req.path.startsWith("/socket.io")) {
-      return res.status(404).json({ error: "WebSocket endpoint" });
-    }
-    res.sendFile(path.join(clientPath, "index.html"));
-  });
-}
+// ✅ REMOVE THIS - Frontend Vercel par serve ho raha hai
+// if (process.env.NODE_ENV === "production") {
+//   const clientPath = path.join(process.cwd(), "client/dist");
+//   console.log(`📦 Serving static files from: ${clientPath}`);
+//   app.use(express.static(clientPath));
+//   app.get("*", (req, res) => {
+//     if (req.path.startsWith("/api")) {
+//       return res.status(404).json({ error: "API endpoint not found" });
+//     }
+//     if (req.path.startsWith("/socket.io")) {
+//       return res.status(404).json({ error: "WebSocket endpoint" });
+//     }
+//     res.sendFile(path.join(clientPath, "index.html"));
+//   });
+// }
 
 // Setup WebSocket handlers
 setupSocketHandlers(io);
