@@ -11,9 +11,6 @@ export class MessageHandler {
     };
   }
 
-  /**
-   * Handle room-related messages
-   */
   handleRoomMessage(socket, room, event, data) {
     switch (event) {
       case "create_room":
@@ -31,9 +28,6 @@ export class MessageHandler {
     }
   }
 
-  /**
-   * Handle game-related messages
-   */
   handleGameMessage(socket, room, event, data) {
     switch (event) {
       case "choose_word":
@@ -49,9 +43,6 @@ export class MessageHandler {
     }
   }
 
-  /**
-   * Handle drawing-related messages
-   */
   handleDrawingMessage(socket, room, event, data) {
     if (
       !room ||
@@ -77,9 +68,6 @@ export class MessageHandler {
     }
   }
 
-  /**
-   * Handle chat messages
-   */
   handleChatMessage(socket, room, data) {
     if (!data.text || data.text.trim().length === 0) {
       return this.sendError(socket, "Message cannot be empty");
@@ -90,7 +78,6 @@ export class MessageHandler {
       return this.sendError(socket, "Player not found");
     }
 
-    // Check if message is a guess
     if (room.game.isRoundActive && !player.isDrawer) {
       const guessResult = room.game.handleGuess(socket.id, data.text);
       if (guessResult.correct) {
@@ -100,111 +87,84 @@ export class MessageHandler {
           player.name,
           guessResult.points,
         );
+
+        // ✅ NAYA: Agar sab players guess kar lein, round end karo turant
+        if (guessResult.allGuessed) {
+          this.broadcastRoundEnd(room);
+        }
         return;
       }
     }
 
-    // Regular chat message
     this.broadcastChatMessage(room, player, data.text);
   }
 
-  // ========== Private Handlers ==========
-
-  /**
-   * Handle create room
-   */
   handleCreateRoom(socket, data) {
     try {
       const { hostName, settings } = data;
       if (!hostName || hostName.trim().length === 0) {
         return this.sendError(socket, "Host name is required");
       }
-
-      // Room creation is handled in socketHandler.js
-      // This method is just for validation
       return { success: true, hostName, settings };
     } catch (error) {
       return this.sendError(socket, error.message);
     }
   }
 
-  /**
-   * Handle join room
-   */
   handleJoinRoom(socket, data) {
     try {
       const { roomId, playerName } = data;
       if (!roomId || !playerName) {
         return this.sendError(socket, "Room ID and player name are required");
       }
-
       if (playerName.trim().length === 0) {
         return this.sendError(socket, "Player name cannot be empty");
       }
-
       return { success: true, roomId, playerName };
     } catch (error) {
       return this.sendError(socket, error.message);
     }
   }
 
-  /**
-   * Handle leave room
-   */
   handleLeaveRoom(socket, room) {
     if (!room) {
       return this.sendError(socket, "Room not found");
     }
-
     const player = room.removePlayer(socket.id);
     if (player) {
       this.broadcastPlayerLeft(room, socket.id);
       socket.leave(room.id);
     }
-
     return { success: true };
   }
 
-  /**
-   * Handle toggle ready
-   */
   handleToggleReady(socket, room) {
     if (!room) {
       return this.sendError(socket, "Room not found");
     }
-
     const player = room.game.getPlayer(socket.id);
     if (!player) {
       return this.sendError(socket, "Player not found");
     }
-
     const isReady = player.toggleReady();
     this.broadcastPlayerReady(room, socket.id, isReady);
-
     return { success: true, isReady };
   }
 
-  /**
-   * Handle start game
-   */
   handleStartGame(socket, room) {
     if (!room) {
       return this.sendError(socket, "Room not found");
     }
-
     if (room.hostId !== socket.id) {
       return this.sendError(socket, "Only the host can start the game");
     }
-
     if (room.game.players.length < 2) {
       return this.sendError(socket, "Need at least 2 players to start");
     }
-
     const allReady = room.game.players.every((p) => p.isReady);
     if (!allReady) {
       return this.sendError(socket, "All players must be ready");
     }
-
     try {
       const gameStartData = room.startGame();
       this.broadcastGameStarted(room, gameStartData);
@@ -214,94 +174,72 @@ export class MessageHandler {
     }
   }
 
-  /**
-   * Handle choose word
-   */
   handleChooseWord(socket, room, data) {
     if (!room) {
       return this.sendError(socket, "Room not found");
     }
-
     if (room.game.currentDrawer.id !== socket.id) {
       return this.sendError(socket, "Only the drawer can choose the word");
     }
-
     try {
       const chosen = room.game.chooseWord(data.word);
       this.broadcastWordChosen(room, chosen);
+
+      // ✅ NAYA: Word choose hone ke baad ACTUAL timer start karo
+      this.startRoundTimer(room);
+
       return { success: true, word: chosen };
     } catch (error) {
       return this.sendError(socket, error.message);
     }
   }
 
-  /**
-   * Handle guess
-   */
   handleGuess(socket, room, data) {
     if (!room) {
       return this.sendError(socket, "Room not found");
     }
-
     if (!room.game.isRoundActive) {
       return this.sendError(socket, "No active round");
     }
-
     const player = room.game.getPlayer(socket.id);
     if (!player) {
       return this.sendError(socket, "Player not found");
     }
-
     if (player.isDrawer) {
       return this.sendError(socket, "Drawer cannot guess");
     }
-
     const result = room.game.handleGuess(socket.id, data.text);
     if (result.correct) {
       this.broadcastGuessResult(room, socket.id, player.name, result.points);
       if (result.allGuessed) {
-        // All players guessed correctly
         this.broadcastRoundEnd(room);
       }
     } else {
       this.sendGuessResult(socket, false, null);
     }
-
     return { success: true, result };
   }
 
-  /**
-   * Handle get game state
-   */
   handleGetGameState(socket, room) {
     if (!room) {
       return this.sendError(socket, "Room not found");
     }
-
     const gameState = room.game.getGameState();
     socket.emit("game_state", gameState);
     return { success: true };
   }
 
-  /**
-   * Handle end round (admin only)
-   */
   handleEndRound(socket, room) {
     if (!room) {
       return this.sendError(socket, "Room not found");
     }
-
     if (room.hostId !== socket.id) {
       return this.sendError(socket, "Only the host can end the round");
     }
-
     this.broadcastRoundEnd(room);
     return { success: true };
   }
 
-  /**
-   * Handle draw start
-   */
   handleDrawStart(socket, room, data) {
     const action = {
       type: "draw_start",
@@ -315,9 +253,6 @@ export class MessageHandler {
     return { success: true };
   }
 
-  /**
-   * Handle draw move
-   */
   handleDrawMove(socket, room, data) {
     const action = {
       type: "draw_move",
@@ -329,9 +264,6 @@ export class MessageHandler {
     return { success: true };
   }
 
-  /**
-   * Handle draw end
-   */
   handleDrawEnd(socket, room) {
     const action = { type: "draw_end" };
     room.game.addDrawAction(action);
@@ -339,29 +271,18 @@ export class MessageHandler {
     return { success: true };
   }
 
-  /**
-   * Handle canvas clear
-   */
   handleCanvasClear(socket, room) {
     io.to(room.id).emit("canvas_clear");
     room.game.addDrawAction({ type: "canvas_clear" });
     return { success: true };
   }
 
-  /**
-   * Handle draw undo
-   */
   handleDrawUndo(socket, room) {
     io.to(room.id).emit("draw_undo");
     room.game.addDrawAction({ type: "draw_undo" });
     return { success: true };
   }
 
-  // ========== Broadcasting Methods ==========
-
-  /**
-   * Broadcast player joined
-   */
   broadcastPlayerJoined(room, player) {
     io.to(room.id).emit("player_joined", {
       player: player.toJSON(),
@@ -369,9 +290,6 @@ export class MessageHandler {
     });
   }
 
-  /**
-   * Broadcast player left
-   */
   broadcastPlayerLeft(room, playerId) {
     io.to(room.id).emit("player_left", {
       playerId,
@@ -379,9 +297,6 @@ export class MessageHandler {
     });
   }
 
-  /**
-   * Broadcast player ready status
-   */
   broadcastPlayerReady(room, playerId, isReady) {
     io.to(room.id).emit("player_ready", {
       playerId,
@@ -389,16 +304,12 @@ export class MessageHandler {
     });
   }
 
-  /**
-   * Broadcast game started
-   */
   broadcastGameStarted(room, gameStartData) {
     io.to(room.id).emit("game_started", {
       roomInfo: room.getRoomInfo(),
       gameState: room.game.getGameState(),
     });
 
-    // Send word options to drawer
     const drawer = room.game.currentDrawer;
     io.to(drawer.socketId).emit("word_selection", {
       words: gameStartData.wordOptions,
@@ -406,9 +317,6 @@ export class MessageHandler {
     });
   }
 
-  /**
-   * Broadcast word chosen
-   */
   broadcastWordChosen(room, word) {
     io.to(room.id).emit("word_chosen", {
       word: room.game.getWordDisplay(),
@@ -417,8 +325,31 @@ export class MessageHandler {
   }
 
   /**
-   * Broadcast guess result
+   * ✅ NAYA: Round ka actual timer start karta hai. Har second
+   * "timer_update" event sabko bhejta hai. Time 0 hote hi automatically
+   * round end ho jata hai (broadcastRoundEnd call hota hai).
    */
+  startRoundTimer(room) {
+    console.log("⏱️ startRoundTimer called for room:", room.id);
+
+    room.game.startTimer(
+      (timeLeft) => {
+        io.to(room.id).emit("timer_update", { timeLeft });
+
+        if (room.settings.hints > 0) {
+          const hint = room.game.getHint();
+          if (hint) {
+            io.to(room.id).emit("hint_update", { hint });
+          }
+        }
+      },
+      () => {
+        console.log("⏰ Time up for room:", room.id, "- ending round");
+        this.broadcastRoundEnd(room);
+      },
+    );
+  }
+
   broadcastGuessResult(room, playerId, playerName, points) {
     io.to(room.id).emit("guess_result", {
       correct: true,
@@ -428,9 +359,6 @@ export class MessageHandler {
     });
   }
 
-  /**
-   * Send guess result to specific player
-   */
   sendGuessResult(socket, correct, message) {
     socket.emit("guess_result", {
       correct,
@@ -438,26 +366,22 @@ export class MessageHandler {
     });
   }
 
-  /**
-   * Broadcast round end
-   */
   broadcastRoundEnd(room) {
+    // ✅ Timer stop karo agar abhi chal raha ho (manual end ya all-guessed case)
+    room.game.stopTimer();
+
     const roundResult = room.game.endRound();
     io.to(room.id).emit("round_end", roundResult);
 
     if (room.game.isGameOver()) {
       this.broadcastGameOver(room);
     } else {
-      // Start next round after delay
       setTimeout(() => {
         this.startNextRound(room);
       }, 5000);
     }
   }
 
-  /**
-   * Broadcast game over
-   */
   broadcastGameOver(room) {
     const leaderboard = room.game.getPlayersByScore();
     const winner = leaderboard[0];
@@ -469,9 +393,6 @@ export class MessageHandler {
     room.status = "finished";
   }
 
-  /**
-   * Start next round
-   */
   startNextRound(room) {
     const gameStartData = room.game.startNewRound();
     io.to(room.id).emit("new_round", {
@@ -480,7 +401,6 @@ export class MessageHandler {
       wordOptions: gameStartData.wordOptions,
     });
 
-    // Send word options to new drawer
     const drawer = room.game.currentDrawer;
     io.to(drawer.socketId).emit("word_selection", {
       words: gameStartData.wordOptions,
@@ -488,16 +408,10 @@ export class MessageHandler {
     });
   }
 
-  /**
-   * Broadcast draw data
-   */
   broadcastDrawData(room, data) {
     io.to(room.id).emit("draw_data", data);
   }
 
-  /**
-   * Broadcast chat message
-   */
   broadcastChatMessage(room, player, text) {
     io.to(room.id).emit("chat_message", {
       playerId: player.id,
@@ -507,17 +421,11 @@ export class MessageHandler {
     });
   }
 
-  /**
-   * Send error message
-   */
   sendError(socket, message) {
     socket.emit("error", { message });
     return { success: false, error: message };
   }
 
-  /**
-   * Validate message payload
-   */
   validateMessage(event, data) {
     const validations = {
       create_room: () => data.hostName && data.settings,
@@ -530,24 +438,19 @@ export class MessageHandler {
     };
 
     const validator = validations[event];
-    if (!validator) return true; // No validation needed
+    if (!validator) return true;
     return validator();
   }
 
-  /**
-   * Sanitize message data
-   */
   sanitizeMessage(data) {
     const sanitized = { ...data };
 
-    // Sanitize strings
     Object.keys(sanitized).forEach((key) => {
       if (typeof sanitized[key] === "string") {
-        sanitized[key] = sanitized[key].trim().slice(0, 500); // Limit length
+        sanitized[key] = sanitized[key].trim().slice(0, 500);
       }
     });
 
-    // Sanitize numbers
     if (sanitized.x !== undefined)
       sanitized.x = Math.max(0, Math.min(sanitized.x, 1000));
     if (sanitized.y !== undefined)

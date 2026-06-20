@@ -126,7 +126,7 @@ export default function Game() {
         payload: {
           word,
           isRoundActive: true,
-          isDrawer: isDrawer, // ✅ IMPORTANT
+          isDrawer: isDrawer,
         },
       });
 
@@ -135,7 +135,6 @@ export default function Game() {
         payload: isDrawer,
       });
 
-      // ✅ Request game state to ensure timer is running
       socket.emit("get_game_state");
     });
 
@@ -167,7 +166,6 @@ export default function Game() {
           },
         ]);
 
-        // ✅ Update player score
         dispatch({
           type: "UPDATE_PLAYER_SCORE",
           payload: {
@@ -197,7 +195,6 @@ export default function Game() {
       setLeaderboard(board);
     });
 
-    // ✅ TIMER UPDATE EVENT - Pehle se hai, but ensure karo
     socket.on("timer_update", ({ timeLeft }) => {
       console.log("⏱️ Timer update received on Game page:", timeLeft);
       dispatch({
@@ -242,7 +239,6 @@ export default function Game() {
     }
   }, [socket, state.gameState.isGameActive, state.players.length]);
 
-  // ✅ Auto-request timer state every 5 seconds (fallback)
   useEffect(() => {
     if (socket && state.gameState.isRoundActive) {
       const interval = setInterval(() => {
