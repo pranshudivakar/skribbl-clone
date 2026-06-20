@@ -19,9 +19,7 @@ export default function WordDisplay({ word, isDrawer, hint }) {
     return (
       <div className="word-display">
         <span className="word-display-icon">💡</span>
-        <span className="word-display-text word-display-text-hint">
-          {hint}
-        </span>
+        <span className="word-display-text word-display-text-hint">{hint}</span>
       </div>
     );
   }
@@ -52,3 +50,5 @@ export default function WordDisplay({ word, isDrawer, hint }) {
     </div>
   );
 }
+
+

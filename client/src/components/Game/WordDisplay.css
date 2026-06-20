@@ -58,3 +58,83 @@
     letter-spacing: 2px;
   }
 }
+
+
+/* ====== Word Display ====== */
+
+.word-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.word-display-icon {
+  color: #9ca3af;
+  font-size: 1.05rem;
+}
+
+.word-display-text {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+/* Drawer sees the actual word in green */
+.word-display-text-drawer {
+  color: #4ade80;
+}
+
+/* Hint shown in yellow, monospace, letter-spaced */
+.word-display-text-hint {
+  color: #facc15;
+  font-family: "Consolas", "Courier New", monospace;
+  letter-spacing: 4px;
+  display: flex;
+  gap: 2px;
+}
+
+/* Hint letters and blanks */
+.hint-letter {
+  color: #facc15;
+}
+
+.hint-blank {
+  color: #4a4a6a;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-style: dotted;
+  min-width: 12px;
+  display: inline-block;
+  text-align: center;
+}
+
+/* Blanks for guessers */
+.word-display-text-blanks {
+  color: #ffffff;
+  font-family: "Consolas", "Courier New", monospace;
+  letter-spacing: 4px;
+}
+
+.word-blank-space {
+  margin: 0 4px;
+  min-width: 8px;
+}
+
+/* Waiting state */
+.word-display-text-waiting {
+  color: #6b7280;
+  font-weight: 500;
+  font-style: italic;
+}
+
+/* ====== Responsive ====== */
+
+@media (max-width: 480px) {
+  .word-display-text {
+    font-size: 0.95rem;
+  }
+
+  .word-display-text-hint,
+  .word-display-text-blanks {
+    letter-spacing: 2px;
+  }
+}
